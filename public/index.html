@@ -31,7 +31,7 @@
 
       device = new Twilio.Device(data.token, {
         logLevel: 1,
-        edge: 'ashburn', // closest US edge for low latency
+        edge: 'ashburn',
       });
 
       device.on('registered', () => {
