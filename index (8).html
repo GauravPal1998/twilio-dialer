@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Click-to-Call Dialer</title>
+  <script src="https://sdk.twilio.com/js/voice/releases/2.11.1/twilio.min.js"></script>
+  <style>
+    body { font-family: Arial, sans-serif; max-width: 400px; margin: 60px auto; text-align: center; }
+    input { padding: 10px; font-size: 16px; width: 80%; margin-bottom: 10px; }
+    button { padding: 10px 20px; font-size: 16px; margin: 5px; cursor: pointer; }
+    #status { margin-top: 15px; font-weight: bold; }
+    .call { background: #2ecc71; color: white; }
+    .hangup { background: #e74c3c; color: white; }
+  </style>
+</head>
+<body>
+  <h2>VAYUZ Dialer</h2>
+  <input type="text" id="phoneNumber" placeholder="+1XXXXXXXXXX" />
+  <br />
+  <button class="call" onclick="makeCall()">Call</button>
+  <button class="hangup" onclick="hangUp()">Hang Up</button>
+  <div id="status">Initializing...</div>
+
+  <script>
+    let device;
+    let activeCall;
+
+    async function init() {
+      const res = await fetch('/token?identity=gaurav');
+      const data = await res.json();
+
+      device = new Twilio.Device(data.token, {
+        logLevel: 1,
+        edge: 'ashburn', // closest US edge for low latency
+      });
+
+      device.on('registered', () => {
+        document.getElementById('status').textContent = 'Ready to call';
+      });
+
+      device.on('error', (err) => {
+        document.getElementById('status').textContent = 'Error: ' + err.message;
+      });
+
+      device.register();
+    }
+
+    async function makeCall() {
+      const number = document.getElementById('phoneNumber').value.trim();
+      if (!number) return alert('Enter a number in E.164 format, e.g. +1XXXXXXXXXX');
+
+      document.getElementById('status').textContent = 'Calling ' + number + '...';
+      activeCall = await device.connect({ params: { To: number } });
+
+      activeCall.on('accept', () => {
+        document.getElementById('status').textContent = 'On call with ' + number;
+      });
+      activeCall.on('disconnect', () => {
+        document.getElementById('status').textContent = 'Call ended';
+      });
+    }
+
+    function hangUp() {
+      if (activeCall) activeCall.disconnect();
+    }
+
+    init();
+  </script>
+</body>
+</html>
